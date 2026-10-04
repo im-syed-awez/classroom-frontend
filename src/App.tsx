@@ -1,7 +1,5 @@
 import {
   Refine,
-  GitHubBanner,
-  WelcomePage,
   Authenticated,
 } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
@@ -25,11 +23,14 @@ import { useNotificationProvider } from "./components/refine-ui/notification/use
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import "./App.css";
+import Dashboard from "./pages/dashboard";
+import { BookOpen, Home } from "lucide-react";
+import SubjectsList from "./pages/subjects/list";
+import SubjectsCreate from "./pages/subjects/create";
 
 function App() {
   return (
     <BrowserRouter>
-      <GitHubBanner />
       <RefineKbarProvider>
         <ThemeProvider>
           <DevtoolsProvider>
@@ -42,9 +43,35 @@ function App() {
                 warnWhenUnsavedChanges: true,
                 projectId: "TMGc6g-uZfuMi-ij8Y1L",
               }}
+              resources={[
+                {
+                  name: 'dashboard',
+                  list: '/',
+                  meta: { label:'Home', icon:<Home />}
+                },
+                {
+                  name: 'subjects',
+                  list: '/subjects',
+                  create: '/subjects/create',
+                  meta: { label: 'Subjects', icon: <BookOpen />}
+                }
+              ]}
             >
               <Routes>
-                <Route index element={<WelcomePage />} />
+                <Route element={
+                  <Layout>
+                    <Outlet />
+                    {/* An outlet renders a matching child route of a parent route or nothing if no chlid route matches. Basically its a special component used to render child routes inside a parent route*/}
+                  </Layout>
+                }>
+                  <Route path="/" element={<Dashboard />} />
+
+                  <Route path="subjects">
+                    <Route index element={<SubjectsList />}/>
+                    <Route path="create" element={<SubjectsCreate />}/>
+                  </Route>
+
+                </Route>
               </Routes>
               <Toaster />
               <RefineKbar />
