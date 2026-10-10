@@ -17,7 +17,7 @@ Refine's hooks and components simplifies the development process and eliminates 
 
 ## Backend URL configuration
 
-Set `VITE_BACKEND_BASE_URL` to the backend API base URL for both development and production builds. For local development, add it to `classroom-frontend/.env`:
+Set `VITE_BACKEND_BASE_URL` to the backend API base URL for both development and production builds. For local development, add it to the project-root`.env`:
 
 ```env
 VITE_BACKEND_BASE_URL=http://localhost:8000/api/
