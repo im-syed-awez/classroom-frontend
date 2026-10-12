@@ -24,11 +24,15 @@ const options: CreateDataProviderOptions = {
         const field = 'field' in filter ? filter.field : '';
         const value = String(filter.value);
 
-        if(resource === 'subjects') {
-          if(field === 'department') params.department = value;
-          if(field === 'name' || field === 'code') params.search = value;
+        if (resource === 'subjects') {
+          if (field === 'department' && value && value !== 'all') {
+            params.department = value;
+          }
+          if (field === 'search' || field === 'name' || field === 'code') {
+            if (value) params.search = value;
+          }
         }
-      })
+      });
       // and finally we built it, now return it.
       return params;
     },
@@ -36,12 +40,12 @@ const options: CreateDataProviderOptions = {
       const payload: ListResponse = await response.clone().json();
 
       return payload.data ?? [];
-
     },
     getTotalCount: async (response) => {
       const payload: ListResponse = await response.clone().json();
 
-      return payload.pagination?.total ?? payload.data?.length ?? 0;
+      const total = payload.pagination?.total ?? payload.data?.length ?? 0;
+      return typeof total === 'string' ? Number(total) : total;
     }
 
   }

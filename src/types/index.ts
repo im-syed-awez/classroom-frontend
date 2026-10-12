@@ -1,19 +1,31 @@
+export type Department = {
+  id: number;
+  code?: string;
+  name: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Subject = {
-    id: number;
-    name:string;
-    code: string;
-    description: string;
-    department: string;
-    createdAt: string;
-}
+  id: number;
+  departmentId?: number;
+  name: string;
+  code: string;
+  description: string;
+  createdAt: string;
+  updatedAt?: string;
+  department?: Department;
+};
+
 export type ListResponse<T = unknown> = {
-    data?: T[];
-    pagination?: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-    };
+  data?: T[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number | string;
+    totalPages: number;
+  };
 };
 
 export type CreateResponse<T = unknown> = {
@@ -86,12 +98,6 @@ export type Schedule = {
   day: string;
   startTime: string;
   endTime: string;
-};
-
-export type Department = {
-  id: number;
-  name: string;
-  description: string;
 };
 
 export type ClassDetails = {
