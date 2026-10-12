@@ -58,12 +58,12 @@ const CustomPieTooltip = ({ active, payload }: any) => {
 const Dashboard = () => {
   const { query: subjectsQuery } = useList<Subject>({
     resource: "subjects",
-    pagination: { pageSize: 50 },
+    pagination: { pageSize: 1000 },
   });
 
   const { query: usersQuery } = useList<User>({
     resource: "users",
-    pagination: { pageSize: 50 },
+    pagination: { pageSize: 1000 },
   });
 
   const isLoadingSubjects = subjectsQuery.isLoading;
@@ -143,7 +143,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {isLoadingSubjects ? "..." : totalDepartments || 7}
+              {isLoadingSubjects ? "..." : totalDepartments}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Active divisions offering curricula
@@ -162,7 +162,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {isLoadingUsers ? "..." : teacherCount || 4}
+              {isLoadingUsers ? "..." : teacherCount}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Active faculty mentors
@@ -181,7 +181,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {isLoadingUsers ? "..." : studentCount || totalUsers}
+              {isLoadingUsers ? "..." : studentCount}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               Registered academic profiles

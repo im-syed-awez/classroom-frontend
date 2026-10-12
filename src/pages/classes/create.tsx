@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm } from "@refinedev/react-hook-form";
 import { classSchema } from "@/lib/schema.ts";
 import * as z from "zod";
 
@@ -86,10 +86,10 @@ const Create = () => {
   ];
 
   const bannerPublicId = form.watch('bannerCldPubId');
-  const setBannerImage = (file, field) => {
+  const setBannerImage = (file: any, field: any) => {
     if(file){
       field.onChange(file.url);
-      form.setValue('bannerCldpubId', file.publicId, {
+      form.setValue('bannerCldPubId', file.publicId, {
         //It re-runs zod validation after we submit it.
         shouldValidate: true,
         // This will mark the form as modified as soon as the image is uploaded.
@@ -97,8 +97,8 @@ const Create = () => {
       })
 
     } else {
-      field.onChange
-      form.setValue('bannerCldpubId', '', {
+      field.onChange('');
+      form.setValue('bannerCldPubId', '', {
         shouldValidate: true,
         shouldDirty: true,
       })
@@ -132,14 +132,14 @@ const Create = () => {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <FormField 
                   control={control}
-                  name="BannerUrl"
+                  name="bannerUrl"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Banner Image <span className="text-orange-600">*</span></FormLabel>
                       <FormControl>
                         <UploadWidget
                           value={field.value ? { url: field.value, publicId: bannerPublicId ?? ''} :null}
-                          onChange={(file:any, field:any) =>
+                          onChange={(file) =>
                             setBannerImage(file, field)}
                         />
                       </FormControl>
