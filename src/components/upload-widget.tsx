@@ -12,10 +12,10 @@ const UploadWidget = ({ value = null, onChange, disabled = false }:UploadWidgetP
   // const [deleteToken, setDeleteToken] = useState<string | null>(null);
   // const [isRemoving, setIsRemoving] = useState(false);
 
-  // useEffect(() => {
-  //   setPreview(value);
-  //   if(!value) setDeleteToken(null);
-  // }, [value]);
+  useEffect(() => {
+    setPreview(value);
+    // if(!value) setDeleteToken(null);
+  }, [value]);
 
   useEffect(() => {
     onChangeRef.current= onChange;
