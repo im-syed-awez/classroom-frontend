@@ -1,10 +1,7 @@
-import { BACKEND_BASE_URL } from "@/constants"
-import { ListResponse } from "@/types";
+import { API_URL } from "@/providers/constants";
+import { CreateResponse, ListResponse } from "@/types";
 import { HttpError } from "@refinedev/core";
 import { createDataProvider, CreateDataProviderOptions } from "@refinedev/rest"
-
-if (!BACKEND_BASE_URL)
-  throw new Error('BACKEND_BASE_URL is not configured. Please set VITE_BACKEND_BASE_URL in your .env file.');
 
 // Displaying the security errors on the frontend
 const buildHttpError = async (response: Response): Promise<HttpError> => {
@@ -50,6 +47,10 @@ const options: CreateDataProviderOptions = {
             if (value) params.search = value;
           }
         }
+
+        if (resource === 'users' && field === 'role' && value) {
+          params.role = value;
+        }
       });
       // and finally we built it, now return it.
       return params;
@@ -70,10 +71,23 @@ const options: CreateDataProviderOptions = {
       return typeof total === 'string' ? Number(total) : total;
     }
 
-  }
+  },
+  create: {
+    getEndpoint: ({ resource }) => resource,
+
+    buildBodyParams: async ({variables}) => variables,
+
+    mapResponse: async (response) => {
+      const json: CreateResponse = await response.json();
+
+      return json.data ?? [];
+    }
+      
+    },
+  
 }
 
-const { dataProvider } = createDataProvider(BACKEND_BASE_URL, options);
+const { dataProvider } = createDataProvider(API_URL, options);
 
 export {dataProvider};  
 
