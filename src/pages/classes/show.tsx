@@ -124,7 +124,7 @@ const Show = () => {
                     <li>Paste the code and click "join"</li>
                 </ol>
             </div>
-            <Button size="lg" className='w-full'>Join Class</Button>
+            <Button size="lg" className='w-full' disabled>Join Class</Button>
         </Card>
     </ShowView>
   )
