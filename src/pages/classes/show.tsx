@@ -1,4 +1,3 @@
-import React from 'react'
 import { ClassDetails } from '@/types';
 import { useShow } from '@refinedev/core';
 import { ShowView, ShowViewHeader } from '@/components/refine-ui/views/show-view';
@@ -27,7 +26,7 @@ const Show = () => {
         )
     }
     const teacherName = classDetails.teacher?.name ?? 'Unknown';
-    const teachersInitials = 
+    const teacherInitials = 
         teacherName
             .split(' ')
             .filter(Boolean)
@@ -35,7 +34,7 @@ const Show = () => {
             .map((part) => part[0]?.toUpperCase())
             .join('')
     
-    const placeholderUrl = `https://placehold.co/600x400?text=${encodeURIComponent(teachersInitials || 'NA')}`;
+    const placeholderUrl = `https://placehold.co/600x400?text=${encodeURIComponent(teacherInitials || 'NA')}`;
     
     const { name,
       description,
@@ -50,10 +49,12 @@ const Show = () => {
 
   return (
     <ShowView className="class-view class-show">
-        <ShowViewHeader resource='classes' title='Class Detials' />
+        <ShowViewHeader resource='classes' title='Class Details' />
         <div className='banner'>
-            {bannerUrl ? (
-                <AdvancedImage alt="Class Banner" cldImg={bannerPhoto(bannerCldPubId ?? '', name)} />
+            {bannerCldPubId ? (
+                <AdvancedImage alt="Class Banner" cldImg={bannerPhoto(bannerCldPubId, name)} />
+            ) : bannerUrl ? (
+                <img src={bannerUrl} alt="Class Banner" />
             ) : <div className='placeholder' />}
         </div>    
 
@@ -73,7 +74,14 @@ const Show = () => {
                 <div className='instructor'>
                     <p>Instructor</p>
                     <div>
-                        <img src={teacher?.image ?? placeholderUrl} alt={teacherName} />
+                        <img
+                            src={teacher?.image ?? placeholderUrl}
+                            alt={teacherName}
+                            onError={(event) => {
+                                event.currentTarget.onerror = null;
+                                event.currentTarget.src = placeholderUrl;
+                            }}
+                        />
 
                         <div>
                             <p>{teacherName}</p>
