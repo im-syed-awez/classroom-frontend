@@ -1,5 +1,5 @@
 import { API_URL } from "@/providers/constants";
-import { CreateResponse, ListResponse } from "@/types";
+import { CreateResponse, GetOneResponse, ListResponse } from "@/types";
 import { HttpError } from "@refinedev/core";
 import { createDataProvider, CreateDataProviderOptions } from "@refinedev/rest"
 
@@ -94,8 +94,22 @@ const options: CreateDataProviderOptions = {
 
       return json.data ?? [];
     }
-      
     },
+  getOne: {
+    getEndpoint: ({ resource, id}) => `${resource}/${id}`,
+    
+    mapResponse: async (response) => {
+      if (!response.ok) throw await buildHttpError(response);
+
+      const json: GetOneResponse = await response.json();
+
+      if (json.data === undefined) {
+        throw { message: 'Resource not found', statusCode: 404 };
+      }
+      return json.data;
+    }
+
+  }
   
 }
 

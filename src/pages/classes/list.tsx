@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Subject, User } from "@/types";
 import { GraduationCap, Layers, Search } from "lucide-react";
+import { ShowButton } from "@/components/refine-ui/buttons/show";
 
 type Classroom = {
   id: number;
@@ -123,9 +124,13 @@ const ClassesList = () => {
           header: () => <p className="column-title font-medium">Capacity</p>,
           cell: ({ getValue }) => <span>{getValue<number>()}</span>,
         },
-      ],
-      []
-    ),
+        {
+          id: 'details',
+          size: 140,
+          header: () => <p className="column-title">Details</p>,
+          cell: ({ row }) => <ShowButton resource="classes" recordItemId={row.original.id} variant="outline" size="sm">View</ShowButton>
+        },
+      ], []),
     refineCoreProps: {
       resource: "classes",
       pagination: { pageSize: 10, mode: "server" },
