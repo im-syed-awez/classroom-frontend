@@ -66,7 +66,7 @@ const Show = () => {
                 </div>
                 <div>
                     <Badge variant="outline">{capacity} spots</Badge>
-                    <Badge variant={status == 'active' ? 'default' : 'secondary'} data-status={status}>{status.toUpperCase()}</Badge>
+                    <Badge variant={status === 'active' ? 'default' : 'secondary'} data-status={status}>{status.toUpperCase()}</Badge>
                 </div>
             </div>
 
@@ -75,11 +75,12 @@ const Show = () => {
                     <p>Instructor</p>
                     <div>
                         <img
-                            src={teacher?.image ?? placeholderUrl}
+                            src={teacher?.image || placeholderUrl}
                             alt={teacherName}
                             onError={(event) => {
-                                event.currentTarget.onerror = null;
-                                event.currentTarget.src = placeholderUrl;
+                                if (event.currentTarget.src !== placeholderUrl) {
+                                    event.currentTarget.src = placeholderUrl;
+                                }
                             }}
                         />
 
