@@ -10,16 +10,24 @@ import {
 } from "@/components/ui/select";
 import { Search, BookOpen, Layers } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
-import { Subject } from "@/types";
+import { Department, Subject } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { ColumnDef } from "@tanstack/react-table";
 import { useTable } from "@refinedev/react-table";
+import { useGetIdentity, useList } from "@refinedev/core";
+import { CreateButton } from "@/components/refine-ui/buttons/create";
+import { EditButton } from "@/components/refine-ui/buttons/edit";
+import { ShowButton } from "@/components/refine-ui/buttons/show";
+import { DeleteButton } from "@/components/refine-ui/buttons/delete";
 
 const SubjectsList = () => {
+  const { data: identity } = useGetIdentity<{ role?: string }>();
+  const isAdmin = identity?.role === "admin";
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const { query: departmentsQuery } = useList<Department>({ resource: "departments", pagination: { pageSize: 100 } });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -85,8 +93,18 @@ const SubjectsList = () => {
             );
           },
         },
+        ...(isAdmin ? [{
+          id: "actions",
+          size: 220,
+          header: () => <p className="column-title font-medium">Actions</p>,
+          cell: ({ row }) => <div className="flex gap-2">
+            <ShowButton resource="subjects" recordItemId={row.original.id} variant="outline" size="sm">View</ShowButton>
+            <EditButton resource="subjects" recordItemId={row.original.id} variant="outline" size="sm">Edit</EditButton>
+            <DeleteButton resource="subjects" recordItemId={row.original.id} size="sm">Delete</DeleteButton>
+          </div>,
+        } as ColumnDef<Subject>] : []),
       ],
-      []
+      [isAdmin]
     ),
     refineCoreProps: {
       resource: "subjects",
@@ -140,16 +158,13 @@ const SubjectsList = () => {
 
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
-                <SelectItem value="Computer Science">Computer Science</SelectItem>
-                <SelectItem value="Mathematics">Mathematics</SelectItem>
-                <SelectItem value="Physics">Physics</SelectItem>
-                <SelectItem value="Biology">Biology</SelectItem>
-                <SelectItem value="English">English</SelectItem>
-                <SelectItem value="History">History</SelectItem>
-                <SelectItem value="Business">Business</SelectItem>
+                {(departmentsQuery.data?.data ?? []).map((department) => (
+                  <SelectItem key={department.id} value={department.id.toString()}>{department.name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+          {isAdmin && <CreateButton resource="subjects" className="w-full sm:w-auto">Create Subject</CreateButton>}
         </div>
       </div>
 
