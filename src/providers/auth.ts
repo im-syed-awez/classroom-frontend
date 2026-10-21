@@ -93,5 +93,16 @@ export const authProvider: AuthProvider = {
     const session = await getSession();
     return session?.user.role ?? null;
   },
-  onError: async (error) => ({ error }),
+  onError: async (error) => {
+    const { status, statusCode } = error as Error & {
+      status?: number;
+      statusCode?: number;
+    };
+
+    if (status === 401 || statusCode === 401) {
+      return { error, logout: true, redirectTo: "/login" };
+    }
+
+    return { error };
+  },
 };

@@ -19,6 +19,7 @@ export function SubjectForm({ action }: { action: "create" | "edit" }) {
   const { data: identity, isLoading: isLoadingIdentity } = useGetIdentity<{ role?: string }>();
   const form = useForm({
     resolver: zodResolver(subjectSchema),
+    defaultValues: { name: "", code: "", description: "" },
     refineCoreProps: { resource: "subjects", action },
   });
   const { query } = useList<Department>({ resource: "departments", pagination: { pageSize: 100 } });

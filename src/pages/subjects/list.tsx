@@ -93,16 +93,16 @@ const SubjectsList = () => {
             );
           },
         },
-        ...(isAdmin ? [{
+        {
           id: "actions",
           size: 220,
           header: () => <p className="column-title font-medium">Actions</p>,
           cell: ({ row }) => <div className="flex gap-2">
             <ShowButton resource="subjects" recordItemId={row.original.id} variant="outline" size="sm">View</ShowButton>
-            <EditButton resource="subjects" recordItemId={row.original.id} variant="outline" size="sm">Edit</EditButton>
-            <DeleteButton resource="subjects" recordItemId={row.original.id} size="sm">Delete</DeleteButton>
+            {isAdmin && <EditButton resource="subjects" recordItemId={row.original.id} variant="outline" size="sm">Edit</EditButton>}
+            {isAdmin && <DeleteButton resource="subjects" recordItemId={row.original.id} size="sm">Delete</DeleteButton>}
           </div>,
-        } as ColumnDef<Subject>] : []),
+        },
       ],
       [isAdmin]
     ),

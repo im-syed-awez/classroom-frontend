@@ -15,7 +15,11 @@ import { Textarea } from "@/components/ui/textarea";
 export function DepartmentForm({ action }: { action: "create" | "edit" }) {
   const isEdit = action === "edit";
   const { data: identity, isLoading: isLoadingIdentity } = useGetIdentity<{ role?: string }>();
-  const form = useForm({ resolver: zodResolver(departmentSchema), refineCoreProps: { resource: "departments", action } });
+  const form = useForm({
+  resolver: zodResolver(departmentSchema),
+  defaultValues: { code: "", name: "", description: "" },
+  refineCoreProps: { resource: "departments", action },
+  });
   const { control, handleSubmit, formState: { isSubmitting }, refineCore: { onFinish } } = form;
   const onSubmit = async (values: z.infer<typeof departmentSchema>) => { await onFinish(values); };
   const View = isEdit ? EditView : CreateView;

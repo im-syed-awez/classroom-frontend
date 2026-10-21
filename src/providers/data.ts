@@ -10,7 +10,7 @@ const buildHttpError = async (response: Response): Promise<HttpError> => {
   try {
     const payload = (await response.json()) as {message?: string; error?: string }
     
-    if(payload?.message || payload?.error) message = payload.message ?? payload.error ?? message;
+    if (payload?.message || payload?.error) message = payload.message || payload.error || message;
   } catch {
     // Ignore errors
   }
@@ -118,17 +118,19 @@ const options: CreateDataProviderOptions = {
       return json.data;
     }
 
-  }
-  ,
+  },
   update: {
     getEndpoint: ({ resource, id }) => `${resource}/${id}`,
     getRequestMethod: () => 'patch',
     buildBodyParams: async ({ variables }) => variables,
     mapResponse: async (response) => {
       if (!response.ok) throw await buildHttpError(response);
-      const json: GetOneResponse = await response.json();
-      return json.data ?? {};
-    },
+      const json: GetOneResponse<Record<string, unknown>> = await response.json();
+      if (json.data === undefined) {
+        throw { message: 'Update response missing data', statusCode: response.status };
+      }
+      return json.data;
+    }
   },
   deleteOne: {
     getEndpoint: ({ resource, id }) => `${resource}/${id}`,

@@ -29,12 +29,12 @@ export default function DepartmentsList() {
       { accessorKey: "name", header: "Department", size: 240 },
       { accessorKey: "description", header: "Description", size: 360,
         cell: ({ getValue }) => <span>{getValue<string | null>() || "—"}</span> },
-      ...(isAdmin ? [{ id: "actions", header: "Actions", size: 220,
+      { id: "actions", header: "Actions", size: 220,
         cell: ({ row }) => <div className="flex gap-2">
           <ShowButton resource="departments" recordItemId={row.original.id} variant="outline" size="sm">View</ShowButton>
-          <EditButton resource="departments" recordItemId={row.original.id} variant="outline" size="sm">Edit</EditButton>
-          <DeleteButton resource="departments" recordItemId={row.original.id} size="sm">Delete</DeleteButton>
-        </div> } as ColumnDef<Department>] : []),
+          {isAdmin && <EditButton resource="departments" recordItemId={row.original.id} variant="outline" size="sm">Edit</EditButton>}
+          {isAdmin && <DeleteButton resource="departments" recordItemId={row.original.id} size="sm">Delete</DeleteButton>}
+        </div> },
       ], [isAdmin]),
     refineCoreProps: {
       resource: "departments",

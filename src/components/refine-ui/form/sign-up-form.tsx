@@ -59,15 +59,11 @@ export const SignUpForm = () => {
   };
 
   const handleSignUpWithGoogle = () => {
-    register({
-      providerName: "google",
-    });
+    register({ providerName: "google" });
   };
 
   const handleSignUpWithGitHub = () => {
-    register({
-      providerName: "github",
-    });
+    register({ providerName: "github" });
   };
 
   return (
@@ -176,6 +172,7 @@ export const SignUpForm = () => {
               Sign up
             </Button>
 
+            <div className="hidden">
             <div className={cn("flex", "items-center", "gap-4", "mt-6")}>
               <Separator className={cn("flex-1")} />
               <span className={cn("text-sm", "text-muted-foreground")}>or</span>
@@ -227,6 +224,7 @@ export const SignUpForm = () => {
                   <div>GitHub</div>
                 </Button>
               </div>
+            </div>
             </div>
           </form>
         </CardContent>
