@@ -24,9 +24,12 @@ export const departmentSchema = z.object({
 });
 
 const scheduleSchema = z.object({
-  day: z.string().min(1, "Day is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
+  day: z.enum(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Enter a valid start time"),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Enter a valid end time"),
+}).refine((schedule) => schedule.startTime < schedule.endTime, {
+  message: "End time must be after start time",
+  path: ["endTime"],
 });
 
 export const classSchema = z.object({
@@ -43,20 +46,17 @@ export const classSchema = z.object({
       invalid_type_error: "Subject is required",
     })
     .min(1, "Subject is required"),
-  teacherId: z.string().min(1, "Teacher is required"),
+  teacherId: z.string().optional(),
   capacity: z.coerce
     .number({
       required_error: "Capacity is required",
       invalid_type_error: "Capacity is required",
     })
+    .int("Capacity must be a whole number")
     .min(1, "Capacity must be at least 1"),
-  status: z.enum(["active", "inactive"]),
-  bannerUrl: z
-    .string({ required_error: "Class banner is required" })
-    .min(1, "Class banner is required"),
-  bannerCldPubId: z
-    .string({ required_error: "Banner reference is required" })
-    .min(1, "Banner reference is required"),
+  status: z.enum(["active", "inactive", "archived"]),
+  bannerUrl: z.string().optional().or(z.literal("")),
+  bannerCldPubId: z.string().optional().or(z.literal("")),
   inviteCode: z.string().optional(),
   schedules: z.array(scheduleSchema).optional(),
 });

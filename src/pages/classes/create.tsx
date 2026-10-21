@@ -1,7 +1,6 @@
-import { CreateView } from "@/components/refine-ui/views/create-view.tsx";
 import { Breadcrumb } from "@/components/refine-ui/layout/breadcrumb.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { useBack, useList } from "@refinedev/core";
+import { useBack, useGetIdentity, useList } from "@refinedev/core";
 import { Separator } from "@/components/ui/separator.tsx";
 import {
   Card,
@@ -11,20 +10,19 @@ import {
 } from "@/components/ui/card.tsx";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
+import { useFieldArray } from "react-hook-form";
 import { classSchema } from "@/lib/schema.ts";
 import * as z from "zod";
 
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label.tsx";
 import {
   Select,
   SelectContent,
@@ -35,16 +33,18 @@ import {
 import { Textarea } from "@/components/ui/textarea.tsx";
 import { Loader2 } from "lucide-react";
 import UploadWidget from "@/components/upload-widget";
-import { Subject, User } from "@/types";
+import { Subject, User, UploadWidgetValue } from "@/types";
 
-const Create = () => {
+export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
+  const isEdit = action === "edit";
   const back = useBack();
+  const { data: identity } = useGetIdentity<{ id?: string; role?: string }>();
 
   const form = useForm({
     resolver: zodResolver(classSchema),
     refineCoreProps: {
       resource: "classes",
-      action: "create",
+      action,
     }
   });
 
@@ -55,9 +55,17 @@ const Create = () => {
     control,
   } = form;
 
+  const { fields: scheduleFields, append: appendSchedule, remove: removeSchedule } = useFieldArray({
+    control,
+    name: "schedules",
+  });
+
   const onSubmit = async (values: z.infer<typeof classSchema>) => {
     try {
-      await onFinish(values);
+      await onFinish({
+        ...values,
+        teacherId: identity?.role === "teacher" ? identity.id : values.teacherId,
+      });
     } catch (error) {
       console.error("Error creating class:", error);
     }
@@ -82,11 +90,11 @@ const Create = () => {
   const subjects = subjectsQuery?.data?.data || [];
   const subjectsLoading = subjectsQuery.isLoading;
 
-  const teachers = teachersQuery?.data?.data || [];
-  const teachersLoading = teachersQuery.isLoading;
+  const teachers = identity?.role === "admin" ? teachersQuery?.data?.data || [] : [];
+  const teachersLoading = identity?.role === "admin" && teachersQuery.isLoading;
 
   const bannerPublicId = form.watch('bannerCldPubId');
-  const setBannerImage = (file: any, field: any) => {
+  const setBannerImage = (file: UploadWidgetValue | null, field: { onChange: (value: string) => void }) => {
     if(file){
       field.onChange(file.url);
       form.setValue('bannerCldPubId', file.publicId, {
@@ -106,12 +114,12 @@ const Create = () => {
   }  
 
   return (
-    <CreateView className="class-view">
+    <div className="class-view">
       <Breadcrumb />
 
-      <h1 className="page-title">Create a Class</h1>
+      <h1 className="page-title">{isEdit ? "Edit a Class" : "Create a Class"}</h1>
       <div className="intro-row">
-        <p>Provide the required information below to add a class.</p>
+        <p>{isEdit ? "Update the class details, schedule, and capacity." : "Provide the required information below to add a class."}</p>
         <Button onClick={() => back()}>Go Back</Button>
       </div>
 
@@ -209,7 +217,7 @@ const Create = () => {
                     )}
                   />
 
-                  <FormField
+                  {identity?.role === "admin" && <FormField
                     control={control}
                     name="teacherId"
                     render={({ field }) => (
@@ -241,7 +249,7 @@ const Create = () => {
                         <FormMessage />
                       </FormItem>
                     )}
-                  />
+                  />}
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4">
@@ -270,9 +278,10 @@ const Create = () => {
                     )}
                   />
 
-                  <FormField
+                  {isEdit && <FormField
                     control={control}
                     name="status"
+                    disabled={identity?.role !== "admin"}
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
@@ -290,12 +299,13 @@ const Create = () => {
                           <SelectContent>
                             <SelectItem value="active">Active</SelectItem>
                             <SelectItem value="inactive">Inactive</SelectItem>
+                            {identity?.role === "admin" && <SelectItem value="archived">Archived</SelectItem>}
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )}
-                  />
+                  />}
                 </div>
 
                 <FormField
@@ -315,16 +325,43 @@ const Create = () => {
                   )}
                 />
 
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-semibold">Class schedule</h2>
+                      <p className="text-sm text-muted-foreground">Optional meeting days and times.</p>
+                    </div>
+                    <Button type="button" variant="outline" onClick={() => appendSchedule({ day: "Monday", startTime: "09:00", endTime: "10:00" })}>Add schedule</Button>
+                  </div>
+                  {scheduleFields.map((schedule, index) => (
+                    <div key={schedule.id} className="grid grid-cols-1 items-end gap-3 rounded-md border p-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                      <FormField control={control} name={`schedules.${index}.day`} render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Day</FormLabel>
+                          <Select value={field.value} onValueChange={field.onChange}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>{["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => <SelectItem key={day} value={day}>{day}</SelectItem>)}</SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={control} name={`schedules.${index}.startTime`} render={({ field }) => <FormItem><FormLabel>Start time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>} />
+                      <FormField control={control} name={`schedules.${index}.endTime`} render={({ field }) => <FormItem><FormLabel>End time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>} />
+                      <Button type="button" variant="destructive" onClick={() => removeSchedule(index)}>Remove</Button>
+                    </div>
+                  ))}
+                </section>
+
                 <Separator />
 
                 <Button type="submit" size="lg" className="w-full">
                   {isSubmitting ? (
                     <div className="flex gap-1">
-                      <span>Creating Class...</span>
+                      <span>{isEdit ? "Saving Class..." : "Creating Class..."}</span>
                       <Loader2 className="inline-block ml-2 animate-spin" />
                     </div>
                   ) : (
-                    "Create Class"
+                    isEdit ? "Save Class" : "Create Class"
                   )}
                 </Button>
               </form>
@@ -332,8 +369,10 @@ const Create = () => {
           </CardContent>
         </Card>
       </div>
-    </CreateView>
+    </div>
   );
 };
 
-export default Create;
+export default function Create() {
+  return <ClassForm action="create" />;
+}

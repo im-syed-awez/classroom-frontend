@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { useList } from "@refinedev/core";
+import { useGetIdentity, useList } from "@refinedev/core";
 import { useTable } from "@refinedev/react-table";
 import { Badge } from "@/components/ui/badge";
 import { CreateButton } from "@/components/refine-ui/buttons/create";
@@ -18,6 +18,8 @@ import {
 import { Subject, User } from "@/types";
 import { GraduationCap, Layers, Search } from "lucide-react";
 import { ShowButton } from "@/components/refine-ui/buttons/show";
+import { EditButton } from "@/components/refine-ui/buttons/edit";
+import { DeleteButton } from "@/components/refine-ui/buttons/delete";
 
 type Classroom = {
   id: number;
@@ -25,11 +27,14 @@ type Classroom = {
   name: string;
   status: "active" | "inactive" | "archived";
   capacity: number;
+  enrollmentCount: number;
   subject?: Subject | null;
   teacher?: User | null;
 };
 
 const ClassesList = () => {
+  const { data: identity } = useGetIdentity<{ role?: string }>();
+  const canManageClasses = identity?.role === "admin" || identity?.role === "teacher";
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("all");
@@ -119,18 +124,31 @@ const ClassesList = () => {
         },
         {
           id: "capacity",
-          accessorKey: "capacity",
-          size: 110,
-          header: () => <p className="column-title font-medium">Capacity</p>,
-          cell: ({ getValue }) => <span>{getValue<number>()}</span>,
+          accessorFn: (row) => `${row.enrollmentCount}/${row.capacity}`,
+          size: 160,
+          header: () => <p className="column-title font-medium">Enrollment</p>,
+          cell: ({ row }) => {
+            const { capacity, enrollmentCount } = row.original;
+            const ratio = capacity > 0 ? enrollmentCount / capacity : 0;
+            const full = enrollmentCount >= capacity;
+            const nearFull = ratio >= 0.9;
+            return <div className="flex flex-col gap-1">
+              <span>{enrollmentCount} / {capacity}</span>
+              {full ? <Badge variant="destructive">Full</Badge> : nearFull ? <Badge variant="outline" className="border-amber-500 text-amber-700">Nearly full</Badge> : null}
+            </div>;
+          },
         },
         {
           id: 'details',
-          size: 140,
-          header: () => <p className="column-title">Details</p>,
-          cell: ({ row }) => <ShowButton resource="classes" recordItemId={row.original.id} variant="outline" size="sm">View</ShowButton>
+          size: 290,
+          header: () => <p className="column-title">Actions</p>,
+          cell: ({ row }) => <div className="flex gap-2">
+            <ShowButton resource="classes" recordItemId={row.original.id} variant="outline" size="sm">View</ShowButton>
+            {canManageClasses && <EditButton resource="classes" recordItemId={row.original.id} variant="outline" size="sm">Edit</EditButton>}
+            {canManageClasses && <DeleteButton resource="classes" recordItemId={row.original.id} size="sm">Delete</DeleteButton>}
+          </div>
         },
-      ], []),
+      ], [canManageClasses]),
     refineCoreProps: {
       resource: "classes",
       pagination: { pageSize: 10, mode: "server" },
@@ -206,11 +224,11 @@ const ClassesList = () => {
             </Select>
           </div>
 
-          <CreateButton resource="classes" className="w-full sm:w-auto">
-            Create Class
-          </CreateButton>
+          {canManageClasses && <CreateButton resource="classes" className="w-full sm:w-auto">Create Class</CreateButton>}
         </div>
       </div>
+
+      {canManageClasses && <p className="text-xs text-muted-foreground">Deleting a class permanently removes its enrollments.</p>}
 
       <DataTable table={classTable} />
     </ListView>

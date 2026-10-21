@@ -30,6 +30,8 @@ type ShowViewHeaderProps = PropsWithChildren<{
   title?: string;
   wrapperClassName?: string;
   headerClassName?: string;
+  showEditButton?: boolean;
+  actionsSlot?: React.ReactNode;
 }>;
 
 export const ShowViewHeader = ({
@@ -37,6 +39,8 @@ export const ShowViewHeader = ({
   title: titleFromProps,
   wrapperClassName,
   headerClassName,
+  showEditButton = true,
+  actionsSlot,
 }: ShowViewHeaderProps) => {
   const back = useBack();
 
@@ -59,10 +63,10 @@ export const ShowViewHeader = ({
   return (
     <div className={cn("flex flex-col", "gap-4", wrapperClassName)}>
       <div className="flex items-center relative gap-2">
-        <div className="bg-background z-[2] pr-4">
+        <div className="bg-background z-2 pr-4">
           <Breadcrumb />
         </div>
-        <Separator className={cn("absolute", "left-0", "right-0", "z-[1]")} />
+        <Separator className={cn("absolute", "left-0", "right-0", "z-1")} />
       </div>
       <div
         className={cn(
@@ -82,16 +86,17 @@ export const ShowViewHeader = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {actionsSlot}
           <RefreshButton
             variant="outline"
             recordItemId={recordItemId}
             resource={resourceName}
           />
-          <EditButton
+          {showEditButton && <EditButton
             variant="outline"
             recordItemId={recordItemId}
             resource={resourceName}
-          />
+          />}
         </div>
       </div>
     </div>

@@ -31,6 +31,7 @@ import DepartmentDetail from "./pages/departments/detail.tsx";
 
 import ClassesList from "./pages/classes/list";
 import ClassesCreate from "./pages/classes/create";
+import ClassesEdit from "./pages/classes/edit";
 import ClassesShow from "./pages/classes/show";
 import Login from "./pages/login";
 import Register from "./pages/register";
@@ -77,6 +78,7 @@ function App() {
                   name: 'classes',
                   list: '/classes',
                   create: '/classes/create',
+                  edit: '/classes/edit/:id',
                   show: '/classes/show/:id',
                   meta: { label: 'Classes', icon: <GraduationCap />}
                 }
@@ -125,6 +127,7 @@ function App() {
                   <Route path="classes">
                     <Route index element={<ClassesList />} />
                     <Route path="create" element={<ClassesCreate />} />
+                    <Route path="edit/:id" element={<ClassesEdit />} />
                     <Route path="show/:id" element={<ClassesShow />} />
                   </Route>
 

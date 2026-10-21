@@ -104,8 +104,9 @@ export type ClassDetails = {
   id: number;
   name: string;
   description: string;
-  status: "active" | "inactive";
+  status: "active" | "inactive" | "archived";
   capacity: number;
+  enrollmentCount?: number;
   courseCode: string;
   courseName: string;
   bannerUrl?: string;
