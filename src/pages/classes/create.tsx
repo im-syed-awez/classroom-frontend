@@ -38,7 +38,7 @@ import { Subject, User, UploadWidgetValue } from "@/types";
 export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
   const isEdit = action === "edit";
   const back = useBack();
-  const { data: identity } = useGetIdentity<{ id?: string; role?: string }>();
+  const { data: identity, isLoading: isLoadingIdentity } = useGetIdentity<{ id?: string; role?: string }>();
 
   const form = useForm({
     resolver: zodResolver(classSchema),
@@ -53,6 +53,8 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
     handleSubmit,
     formState: { isSubmitting, errors },
     control,
+    setError,
+    clearErrors,
   } = form;
 
   const { fields: scheduleFields, append: appendSchedule, remove: removeSchedule } = useFieldArray({
@@ -61,6 +63,11 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
   });
 
   const onSubmit = async (values: z.infer<typeof classSchema>) => {
+    if (identity?.role === "admin" && !values.teacherId?.trim()) {
+      setError("teacherId", { type: "manual", message: "Please select a teacher." });
+      return;
+    }
+
     try {
       await onFinish({
         ...values,
@@ -226,7 +233,10 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
                           Teacher <span className="text-orange-600">*</span>
                         </FormLabel>
                         <Select
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            clearErrors("teacherId");
+                          }}
                           value={field.value}
                           disabled={teachersLoading}
                         >
@@ -290,6 +300,7 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
                         <Select
                           onValueChange={field.onChange}
                           value={field.value}
+                          disabled={identity?.role !== "admin"}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
@@ -354,7 +365,7 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
 
                 <Separator />
 
-                <Button type="submit" size="lg" className="w-full">
+                <Button type="submit" size="lg" className="w-full" disabled={isLoadingIdentity || isSubmitting}>
                   {isSubmitting ? (
                     <div className="flex gap-1">
                       <span>{isEdit ? "Saving Class..." : "Creating Class..."}</span>
