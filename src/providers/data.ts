@@ -8,9 +8,9 @@ const buildHttpError = async (response: Response): Promise<HttpError> => {
   let message = 'Request failed';
 
   try {
-    const payload = (await response.json()) as {message?: string }
+    const payload = (await response.json()) as {message?: string; error?: string }
     
-    if(payload?.message) message = payload.message;
+    if (payload?.message || payload?.error) message = payload.message || payload.error || message;
   } catch {
     // Ignore errors
   }
@@ -35,6 +35,11 @@ const options: CreateDataProviderOptions = {
         params.sortOrder = sorters[0].order;
       }
 
+      if (resource === 'departments' && sorters?.length) {
+        params.sortBy = sorters[0].field;
+        params.sortOrder = sorters[0].order;
+      }
+
       filters?.forEach((filter) => {
         const field = 'field' in filter ? filter.field : '';
         const value = String(filter.value);
@@ -46,6 +51,10 @@ const options: CreateDataProviderOptions = {
           if (field === 'search' || field === 'name' || field === 'code') {
             if (value) params.search = value;
           }
+        }
+
+        if (resource === 'departments' && field === 'search' && value) {
+          params.search = value;
         }
 
         if (resource === 'classes') {
@@ -109,11 +118,33 @@ const options: CreateDataProviderOptions = {
       return json.data;
     }
 
-  }
+  },
+  update: {
+    getEndpoint: ({ resource, id }) => `${resource}/${id}`,
+    getRequestMethod: () => 'patch',
+    buildBodyParams: async ({ variables }) => variables,
+    mapResponse: async (response) => {
+      if (!response.ok) throw await buildHttpError(response);
+      const json: GetOneResponse<Record<string, unknown>> = await response.json();
+      if (json.data === undefined) {
+        throw { message: 'Update response missing data', statusCode: response.status };
+      }
+      return json.data;
+    }
+  },
+  deleteOne: {
+    getEndpoint: ({ resource, id }) => `${resource}/${id}`,
+    mapResponse: async (response) => {
+      if (!response.ok) throw await buildHttpError(response);
+      return undefined;
+    },
+  },
   
 }
 
-const { dataProvider } = createDataProvider(API_URL, options);
+const { dataProvider } = createDataProvider(API_URL, options, {
+  credentials: "include",
+});
 
 export {dataProvider};  
 

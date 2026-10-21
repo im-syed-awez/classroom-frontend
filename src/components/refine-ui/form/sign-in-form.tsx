@@ -42,15 +42,11 @@ export const SignInForm = () => {
   };
 
   const handleSignInWithGoogle = () => {
-    login({
-      providerName: "google",
-    });
+    login({ providerName: "google" });
   };
 
   const handleSignInWithGitHub = () => {
-    login({
-      providerName: "github",
-    });
+    login({ providerName: "github" });
   };
 
   return (
@@ -75,7 +71,7 @@ export const SignInForm = () => {
         )}
       </div>
 
-      <Card className={cn("sm:w-[456px]", "p-12", "mt-6")}>
+      <Card className={cn("sm:w-114", "p-12", "mt-6")}>
         <CardHeader className={cn("px-0")}>
           <CardTitle
             className={cn(
@@ -159,6 +155,7 @@ export const SignInForm = () => {
               Sign in
             </Button>
 
+            <div className="hidden">
             <div className={cn("flex", "items-center", "gap-4", "mt-6")}>
               <Separator className={cn("flex-1")} />
               <span className={cn("text-sm", "text-muted-foreground")}>or</span>
@@ -212,6 +209,7 @@ export const SignInForm = () => {
                   <div>GitHub</div>
                 </Button>
               </div>
+            </div>
             </div>
           </form>
         </CardContent>

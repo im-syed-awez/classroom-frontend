@@ -9,10 +9,10 @@ export type Department = {
 
 export type Subject = {
   id: number;
-  departmentId?: number;
+  departmentId: number;
   name: string;
   code: string;
-  description: string;
+  description: string | null;
   createdAt: string;
   updatedAt?: string;
   department?: Department;

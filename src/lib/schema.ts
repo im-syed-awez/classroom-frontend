@@ -13,12 +13,14 @@ export const facultySchema = z.object({
 export const subjectSchema = z.object({
   name: z.string().min(3, "Subject name must be at least 3 characters"),
   code: z.string().min(5, "Subject code must be at least 5 characters"),
-  description: z
-    .string()
-    .min(5, "Subject description must be at least 5 characters"),
-  department: z
-    .string()
-    .min(2, "Subject department must be at least 2 characters"),
+  description: z.string().trim().max(255).nullable().optional().or(z.literal("")),
+  departmentId: z.coerce.number().int().positive("Select a department"),
+});
+
+export const departmentSchema = z.object({
+  code: z.string().trim().min(1, "Department code is required").max(50),
+  name: z.string().trim().min(1, "Department name is required").max(255),
+  description: z.string().trim().max(255).nullable().optional().or(z.literal("")),
 });
 
 const scheduleSchema = z.object({

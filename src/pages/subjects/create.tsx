@@ -1,9 +1,5 @@
-const SubjectsCreate = () => {
-  return (
-    <>
-        <div>SubjectsCreate</div>
-    </>
-  )
-}
+import { SubjectForm } from "./subject-form";
 
-export default SubjectsCreate;
+export default function SubjectsCreate() {
+  return <SubjectForm action="create" />;
+}

@@ -8,26 +8,32 @@ import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import { BrowserRouter, Route, Routes, Outlet } from "react-router";
 import routerProvider, {
   NavigateToResource,
-  CatchAllNavigate,
   UnsavedChangesNotifier,
   DocumentTitleHandler,
 } from "@refinedev/react-router";
 import { dataProvider } from "./providers/data";
-import { ErrorComponent } from "./components/refine-ui/layout/error-component";
+import { authProvider } from "./providers/auth";
 import { Layout } from "./components/refine-ui/layout/layout";
-import { Header } from "./components/refine-ui/layout/header";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { Toaster } from "./components/refine-ui/notification/toaster";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import "./App.css";
 import Dashboard from "./pages/dashboard";
-import { BookOpen, GraduationCap, Home } from "lucide-react";
+import { BookOpen, Building2, GraduationCap, Home } from "lucide-react";
 import SubjectsList from "./pages/subjects/list";
 import SubjectsCreate from "./pages/subjects/create";
+import SubjectsEdit from "./pages/subjects/edit";
+import SubjectDetail from "./pages/subjects/detail";
+import DepartmentsList from "./pages/departments/index.tsx";
+import DepartmentsCreate from "./pages/departments/create.tsx";
+import DepartmentsEdit from "./pages/departments/edit.tsx";
+import DepartmentDetail from "./pages/departments/detail.tsx";
 
 import ClassesList from "./pages/classes/list";
 import ClassesCreate from "./pages/classes/create";
 import ClassesShow from "./pages/classes/show";
+import Login from "./pages/login";
+import Register from "./pages/register";
 
 function App() {
   return (
@@ -37,6 +43,7 @@ function App() {
           <DevtoolsProvider>
             <Refine
               dataProvider={dataProvider}
+              authProvider={authProvider}
               notificationProvider={useNotificationProvider()}
               routerProvider={routerProvider}
               options={{
@@ -51,9 +58,19 @@ function App() {
                   meta: { label:'Home', icon:<Home />}
                 },
                 {
+                  name: 'departments',
+                  list: '/departments',
+                  create: '/departments/create',
+                  edit: '/departments/edit/:id',
+                  show: '/departments/show/:id',
+                  meta: { label: 'Departments', icon: <Building2 /> }
+                },
+                {
                   name: 'subjects',
                   list: '/subjects',
                   create: '/subjects/create',
+                  edit: '/subjects/edit/:id',
+                  show: '/subjects/show/:id',
                   meta: { label: 'Subjects', icon: <BookOpen />}
                 },
                 {
@@ -66,17 +83,43 @@ function App() {
               ]}
             >
               <Routes>
-                <Route element={
-                  <Layout>
-                    <Outlet />
-                    {/* An outlet renders a matching child route of a parent route or nothing if no chlid route matches. Basically its a special component used to render child routes inside a parent route*/}
-                  </Layout>
-                }>
+                <Route
+                  element={
+                    <Authenticated
+                      key="auth-pages"
+                      fallback={<Outlet />}
+                    >
+                      <NavigateToResource resource="dashboard" />
+                    </Authenticated>
+                  }
+                >
+                  <Route path="login" element={<Login />} />
+                  <Route path="register" element={<Register />} />
+                </Route>
+
+                <Route
+                  element={
+                    <Authenticated key="protected" redirectOnFail="/login">
+                      <Layout>
+                        <Outlet />
+                      </Layout>
+                    </Authenticated>
+                  }
+                >
                   <Route path="/" element={<Dashboard />} />
+
+                  <Route path="departments">
+                    <Route index element={<DepartmentsList />} />
+                    <Route path="create" element={<DepartmentsCreate />} />
+                    <Route path="edit/:id" element={<DepartmentsEdit />} />
+                    <Route path="show/:id" element={<DepartmentDetail />} />
+                  </Route>
 
                   <Route path="subjects">
                     <Route index element={<SubjectsList />}/>
                     <Route path="create" element={<SubjectsCreate />}/>
+                    <Route path="edit/:id" element={<SubjectsEdit />} />
+                    <Route path="show/:id" element={<SubjectDetail />} />
                   </Route>
 
                   <Route path="classes">
