@@ -1,5 +1,5 @@
 import { ClassDetails } from '@/types';
-import { useShow } from '@refinedev/core';
+import { useGetIdentity, useShow } from '@refinedev/core';
 import { ShowView, ShowViewHeader } from '@/components/refine-ui/views/show-view';
 
 import { Card } from '@/components/ui/card';
@@ -8,9 +8,12 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {AdvancedImage} from "@cloudinary/react";
 import { bannerPhoto } from '@/lib/cloudinary';
+import { DeleteButton } from '@/components/refine-ui/buttons/delete';
 
 const Show = () => {
     const { query } = useShow<ClassDetails>({ resource: 'classes'});
+    const { data: identity } = useGetIdentity<{ role?: string }>();
+    const canManage = identity?.role === 'admin' || identity?.role === 'teacher';
 
     const classDetails = query.data?.data;
     const { isLoading, isError } = query;
@@ -18,7 +21,7 @@ const Show = () => {
     if(isLoading || isError || !classDetails) {
         return (
             <ShowView className="class-view class-show">
-                <ShowViewHeader resource='classes' title='Class Details' />
+                <ShowViewHeader resource='classes' title='Class Details' showEditButton={canManage} />
                 <p className='state-message'>
                     {isLoading ? 'Loading Class details...' : isError ? 'Failed to load class details...' : 'Class details not found'}
                 </p>
@@ -45,11 +48,22 @@ const Show = () => {
       subject,
       teacher,
       department,
+            inviteCode,
+            schedules,
+            enrollmentCount = 0,
     } = classDetails;
+        const capacityRatio = capacity > 0 ? enrollmentCount / capacity : 0;
+        const isFull = enrollmentCount >= capacity;
+        const isNearFull = capacityRatio >= 0.9;
 
   return (
     <ShowView className="class-view class-show">
-        <ShowViewHeader resource='classes' title='Class Details' />
+                <ShowViewHeader
+                    resource='classes'
+                    title='Class Details'
+                    showEditButton={canManage}
+                    actionsSlot={canManage ? <DeleteButton resource="classes" recordItemId={classDetails.id} size="sm">Delete Class</DeleteButton> : null}
+                />
         <div className='banner'>
             {bannerCldPubId ? (
                 <AdvancedImage alt="Class Banner" cldImg={bannerPhoto(bannerCldPubId, name)} />
@@ -65,10 +79,14 @@ const Show = () => {
                     <p>{description}</p>
                 </div>
                 <div>
-                    <Badge variant="outline">{capacity} spots</Badge>
+                    <Badge variant="outline">{enrollmentCount} / {capacity} students</Badge>
                     <Badge variant={status === 'active' ? 'default' : 'secondary'} data-status={status}>{status.toUpperCase()}</Badge>
                 </div>
             </div>
+
+            {isFull ? <p role="status" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">This class has reached capacity.</p> : isNearFull ? <p role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">This class is nearly full.</p> : null}
+
+            {canManage && inviteCode && <div className="mt-4 rounded-md border p-3"><p className="text-sm text-muted-foreground">Student invite code</p><p className="font-mono text-lg font-semibold tracking-wider">{inviteCode}</p></div>}
 
             <div className='details-grid'>
                 <div className='instructor'>
@@ -111,6 +129,13 @@ const Show = () => {
                     <p>{subject?.name}</p>
                     <p>{subject?.description}</p>
                 </div>
+            </div>
+
+            <Separator />
+
+            <div className='schedule'>
+                <h2>Schedule</h2>
+                {schedules?.length ? <ul>{schedules.map((schedule, index) => <li key={`${schedule.day}-${schedule.startTime}-${index}`}>{schedule.day}: {schedule.startTime}–{schedule.endTime}</li>)}</ul> : <p>No schedule set.</p>}
             </div>
 
             <Separator />
