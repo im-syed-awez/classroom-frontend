@@ -1,11 +1,12 @@
 import {
   Refine,
   Authenticated,
+  useGetIdentity,
 } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
-import { BrowserRouter, Route, Routes, Outlet } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes, Outlet } from "react-router";
 import routerProvider, {
   NavigateToResource,
   UnsavedChangesNotifier,
@@ -19,7 +20,7 @@ import { Toaster } from "./components/refine-ui/notification/toaster";
 import { ThemeProvider } from "./components/refine-ui/theme/theme-provider";
 import "./App.css";
 import Dashboard from "./pages/dashboard";
-import { BookOpen, Building2, GraduationCap, Home } from "lucide-react";
+import { BookOpen, Building2, GraduationCap, Home, Users } from "lucide-react";
 import SubjectsList from "./pages/subjects/list";
 import SubjectsCreate from "./pages/subjects/create";
 import SubjectsEdit from "./pages/subjects/edit";
@@ -35,6 +36,19 @@ import ClassesEdit from "./pages/classes/edit";
 import ClassesShow from "./pages/classes/show";
 import Login from "./pages/login";
 import Register from "./pages/register";
+import UsersList from "./pages/users/list";
+import UsersCreate from "./pages/users/create";
+import UsersEdit from "./pages/users/edit";
+import UserDetail from "./pages/users/detail";
+
+function AdminRouteGuard() {
+  const { data: identity, isLoading } = useGetIdentity<{ role?: string }>();
+
+  if (isLoading) return <p>Checking permissions…</p>;
+  if (identity?.role !== "admin") return <Navigate to="/" replace />;
+
+  return <Outlet />;
+}
 
 function App() {
   return (
@@ -57,6 +71,14 @@ function App() {
                   name: 'dashboard',
                   list: '/',
                   meta: { label:'Home', icon:<Home />}
+                },
+                {
+                  name: 'users',
+                  list: '/users',
+                  create: '/users/create',
+                  edit: '/users/edit/:id',
+                  show: '/users/show/:id',
+                  meta: { label: 'Users', icon: <Users /> }
                 },
                 {
                   name: 'departments',
@@ -109,6 +131,15 @@ function App() {
                   }
                 >
                   <Route path="/" element={<Dashboard />} />
+
+                  <Route element={<AdminRouteGuard />}>
+                    <Route path="users">
+                      <Route index element={<UsersList />} />
+                      <Route path="create" element={<UsersCreate />} />
+                      <Route path="edit/:id" element={<UsersEdit />} />
+                      <Route path="show/:id" element={<UserDetail />} />
+                    </Route>
+                  </Route>
 
                   <Route path="departments">
                     <Route index element={<DepartmentsList />} />
