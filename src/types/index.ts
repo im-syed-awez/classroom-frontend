@@ -89,6 +89,7 @@ export type User = {
   email: string;
   name: string;
   role: UserRole;
+  emailVerified?: boolean;
   image?: string;
   imageCldPubId?: string;
   department?: string;

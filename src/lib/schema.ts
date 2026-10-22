@@ -10,6 +10,13 @@ export const facultySchema = z.object({
   imageCldPubId: z.string().optional(),
 });
 
+export const userAdminSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(255),
+  email: z.string().trim().email("Enter a valid email address"),
+  role: z.enum(["admin", "teacher", "student"]),
+  password: z.string().min(8, "Temporary password must be at least 8 characters").max(128).optional(),
+});
+
 export const subjectSchema = z.object({
   name: z.string().min(3, "Subject name must be at least 3 characters"),
   code: z.string().min(5, "Subject code must be at least 5 characters"),

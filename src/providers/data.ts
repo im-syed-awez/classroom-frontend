@@ -72,6 +72,10 @@ const options: CreateDataProviderOptions = {
         if (resource === 'users' && field === 'role' && value) {
           params.role = value;
         }
+
+        if (resource === 'users' && field === 'search' && value) {
+          params.search = value;
+        }
       });
       // and finally we built it, now return it.
       return params;
