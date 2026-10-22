@@ -1,11 +1,12 @@
 import {
   Refine,
   Authenticated,
+  useGetIdentity,
 } from "@refinedev/core";
 import { DevtoolsPanel, DevtoolsProvider } from "@refinedev/devtools";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
-import { BrowserRouter, Route, Routes, Outlet } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes, Outlet } from "react-router";
 import routerProvider, {
   NavigateToResource,
   UnsavedChangesNotifier,
@@ -39,6 +40,15 @@ import UsersList from "./pages/users/list";
 import UsersCreate from "./pages/users/create";
 import UsersEdit from "./pages/users/edit";
 import UserDetail from "./pages/users/detail";
+
+function AdminRouteGuard() {
+  const { data: identity, isLoading } = useGetIdentity<{ role?: string }>();
+
+  if (isLoading) return <p>Checking permissions…</p>;
+  if (identity?.role !== "admin") return <Navigate to="/" replace />;
+
+  return <Outlet />;
+}
 
 function App() {
   return (
@@ -122,11 +132,13 @@ function App() {
                 >
                   <Route path="/" element={<Dashboard />} />
 
-                  <Route path="users">
-                    <Route index element={<UsersList />} />
-                    <Route path="create" element={<UsersCreate />} />
-                    <Route path="edit/:id" element={<UsersEdit />} />
-                    <Route path="show/:id" element={<UserDetail />} />
+                  <Route element={<AdminRouteGuard />}>
+                    <Route path="users">
+                      <Route index element={<UsersList />} />
+                      <Route path="create" element={<UsersCreate />} />
+                      <Route path="edit/:id" element={<UsersEdit />} />
+                      <Route path="show/:id" element={<UserDetail />} />
+                    </Route>
                   </Route>
 
                   <Route path="departments">
