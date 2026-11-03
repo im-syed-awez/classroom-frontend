@@ -40,6 +40,7 @@ import UsersList from "./pages/users/list";
 import UsersCreate from "./pages/users/create";
 import UsersEdit from "./pages/users/edit";
 import UserDetail from "./pages/users/detail";
+import SearchPage from "./pages/search";
 
 function AdminRouteGuard() {
   const { data: identity, isLoading } = useGetIdentity<{ role?: string }>();
@@ -131,6 +132,7 @@ function App() {
                   }
                 >
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="search" element={<SearchPage />} />
 
                   <Route element={<AdminRouteGuard />}>
                     <Route path="users">

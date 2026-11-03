@@ -40,6 +40,11 @@ const options: CreateDataProviderOptions = {
         params.sortOrder = sorters[0].order;
       }
 
+      if (resource === 'classes' && sorters?.length) {
+        params.sortBy = sorters[0].field;
+        params.sortOrder = sorters[0].order;
+      }
+
       filters?.forEach((filter) => {
         const field = 'field' in filter ? filter.field : '';
         const value = String(filter.value);
@@ -51,6 +56,8 @@ const options: CreateDataProviderOptions = {
           if (field === 'search' || field === 'name' || field === 'code') {
             if (value) params.search = value;
           }
+          if (field === 'createdFrom' && value) params.createdFrom = value;
+          if (field === 'createdTo' && value) params.createdTo = value;
         }
 
         if (resource === 'departments' && field === 'search' && value) {
@@ -67,6 +74,10 @@ const options: CreateDataProviderOptions = {
           if (field === 'teacher' && value && value !== 'all') {
             params.teacher = value;
           }
+          if (field === 'status' && value && value !== 'all') params.status = value;
+          if (field === 'capacityStatus' && value && value !== 'all') params.capacityStatus = value;
+          if (field === 'createdFrom' && value) params.createdFrom = value;
+          if (field === 'createdTo' && value) params.createdTo = value;
         }
 
         if (resource === 'users' && field === 'role' && value) {

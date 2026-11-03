@@ -14,6 +14,7 @@ import { UserAvatar } from "@/components/refine-ui/layout/user-avatar";
 import { useSidebar, SidebarTrigger } from "@/components/ui/sidebar";
 import { LogOutIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { GlobalSearch } from "@/components/refine-ui/layout/global-search";
 
 export const Header = () => {
   const { isMobile } = useSidebar();
@@ -40,6 +41,7 @@ function DesktopHeader() {
         "z-40"
       )}
     >
+      <GlobalSearch />
       <ThemeToggle />
       <UserDropdown />
     </header>
@@ -110,6 +112,10 @@ function MobileHeader() {
         >
           {title.text}
         </h2>
+      </div>
+
+      <div className="min-w-0 flex-1 px-2">
+        <GlobalSearch />
       </div>
 
       <ThemeToggle className={cn("h-8", "w-8")} />
