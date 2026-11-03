@@ -463,16 +463,10 @@ const Show = () => {
 
         <div className="join">
           <h2>Join Class</h2>
-
-          <ol>
-            <li>Ask your teacher for the invite code</li>
-            <li>Click on "Join Class" button</li>
-            <li>Paste the code and click "join"</li>
-          </ol>
+          <p className="text-sm text-muted-foreground">
+            Use the enrollment form above to join this class with an invite code.
+          </p>
         </div>
-        <Button size="lg" className="w-full" disabled>
-          Join Class
-        </Button>
       </Card>
     </ShowView>
   );

@@ -1,300 +1,80 @@
-import { useList } from "@refinedev/core";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
+import { useGetIdentity } from "@refinedev/core";
+import { Activity, BookOpen, Building2, GraduationCap, Users } from "lucide-react";
 import {
-  BookOpen,
-  Users,
-  Building2,
-  GraduationCap,
-  ArrowRight,
-  Sparkles,
-} from "lucide-react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  ResponsiveContainer,
+  Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { Subject, User } from "@/types";
+import { API_URL } from "@/providers/constants";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Calming, eye-friendly pastel teal/mint/sage color palette
-const CALM_COLORS = [
-  "#2dd4bf", // Teal
-  "#38bdf8", // Sky blue
-  "#34d399", // Mint green
-  "#818cf8", // Soft indigo
-  "#a78bfa", // Lavender
-  "#fbbf24", // Warm amber
-  "#f472b6", // Soft rose
-];
-
-// Custom Tooltip with high-contrast text in both light and dark mode
-const CustomPieTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0];
-    return (
-      <div className="bg-card text-card-foreground border border-border px-3.5 py-2.5 rounded-xl shadow-lg flex flex-col gap-1 z-50">
-        <div className="flex items-center gap-2">
-          <span
-            className="w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: data.payload.fill || data.color }}
-          />
-          <span className="font-semibold text-xs text-foreground tracking-wide">
-            {data.name}
-          </span>
-        </div>
-        <span className="text-xs text-muted-foreground font-medium pl-4.5">
-          {data.value} {data.value === 1 ? "course" : "courses"}
-        </span>
-      </div>
-    );
-  }
-  return null;
+type DashboardData = {
+  totals: { users: number; departments: number; subjects: number; classes: number; enrollments: number };
+  usersByRole: { name: string; value: number }[];
+  enrollmentsByMonth: { month: string; count: number }[];
+  classesByDepartment: { name: string; value: number }[];
+  capacityStatus: { available: number; nearlyFull: number; full: number };
+  activity: { id: string; type: string; label: string; createdAt: string }[];
 };
 
+const COLORS = ["#2dd4bf", "#38bdf8", "#a78bfa", "#fbbf24"];
+
+async function loadDashboard(): Promise<DashboardData> {
+  const response = await fetch(`${API_URL}/analytics/dashboard`, { credentials: "include" });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(payload?.error ?? "Could not load dashboard analytics");
+  return payload.data as DashboardData;
+}
+
 const Dashboard = () => {
-  const { query: subjectsQuery } = useList<Subject>({
-    resource: "subjects",
-    pagination: { pageSize: 1000 },
-  });
+  const { data: identity, isLoading: identityLoading } = useGetIdentity<{ role?: string }>();
+  const dashboardQuery = useQuery({ queryKey: ["dashboard-analytics"], queryFn: loadDashboard, enabled: identity?.role === "admin" });
 
-  const { query: usersQuery } = useList<User>({
-    resource: "users",
-    pagination: { pageSize: 1000 },
-  });
+  if (identityLoading) return <p className="p-6 text-muted-foreground">Loading dashboard…</p>;
+  if (identity?.role !== "admin") return <div className="p-6"><h1 className="text-2xl font-bold">Dashboard</h1><p className="mt-2 text-muted-foreground">Organization-wide analytics are available to administrators.</p></div>;
+  if (dashboardQuery.isLoading) return <p className="p-6 text-muted-foreground">Loading dashboard analytics…</p>;
+  if (dashboardQuery.isError || !dashboardQuery.data) return <p className="p-6 text-destructive" role="alert">{dashboardQuery.error instanceof Error ? dashboardQuery.error.message : "Could not load analytics."}</p>;
 
-  const isLoadingSubjects = subjectsQuery.isLoading;
-  const isLoadingUsers = usersQuery.isLoading;
+  const data = dashboardQuery.data;
+  const capacityData = [
+    { name: "Available", value: data.capacityStatus.available },
+    { name: "Nearly full", value: data.capacityStatus.nearlyFull },
+    { name: "Full", value: data.capacityStatus.full },
+  ];
+  const cards = [
+    { label: "Users", value: data.totals.users, icon: Users },
+    { label: "Departments", value: data.totals.departments, icon: Building2 },
+    { label: "Subjects", value: data.totals.subjects, icon: BookOpen },
+    { label: "Classes", value: data.totals.classes, icon: GraduationCap },
+    { label: "Enrollments", value: data.totals.enrollments, icon: Activity },
+  ];
 
-  const subjects: Subject[] = subjectsQuery.data?.data ?? [];
-  const users: User[] = usersQuery.data?.data ?? [];
-
-  const totalSubjects = subjectsQuery.data?.total ?? subjects.length;
-  const totalUsers = usersQuery.data?.total ?? users.length;
-
-  const teacherCount = users.filter((u: User) => u.role === "teacher").length;
-  const studentCount = users.filter((u: User) => u.role === "student").length;
-
-  // Compute breakdown of subjects per department
-  const departmentCounts = subjects.reduce((acc: Record<string, number>, sub: Subject) => {
-    const deptName = sub.department?.name || "General";
-    acc[deptName] = (acc[deptName] || 0) + 1;
-    return acc;
-  }, {});
-
-  const pieData = Object.entries(departmentCounts).map(([name, value]) => ({
-    name,
-    value,
-  }));
-
-  const totalDepartments = Object.keys(departmentCounts).length;
-
-  return (
-    <div className="flex flex-col gap-6 p-2 md:p-6">
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">University Dashboard</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Real-time view of academic curriculum, faculty members, and enrolled students.
-          </p>
-        </div>
-        <Link to="/subjects">
-          <Button className="flex items-center gap-2 shadow-sm">
-            View All Subjects
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </Link>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-all shadow-sm border border-border/80">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Subjects
-            </CardTitle>
-            <div className="p-2.5 bg-primary/10 rounded-xl text-primary">
-              <BookOpen className="h-5 w-5" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              {isLoadingSubjects ? "..." : totalSubjects}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <Sparkles className="h-3 w-3 text-primary" />
-              Live courses synced
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-all shadow-sm border border-border/80">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Academic Departments
-            </CardTitle>
-            <div className="p-2.5 bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-400">
-              <Building2 className="h-5 w-5" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              {isLoadingSubjects ? "..." : totalDepartments}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Active divisions offering curricula
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-all shadow-sm border border-border/80">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Faculty / Teachers
-            </CardTitle>
-            <div className="p-2.5 bg-sky-500/10 rounded-xl text-sky-600 dark:text-sky-400">
-              <GraduationCap className="h-5 w-5" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              {isLoadingUsers ? "..." : teacherCount}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Active faculty mentors
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-all shadow-sm border border-border/80">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Enrolled Students
-            </CardTitle>
-            <div className="p-2.5 bg-amber-500/10 rounded-xl text-amber-600 dark:text-amber-400">
-              <Users className="h-5 w-5" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-foreground">
-              {isLoadingUsers ? "..." : studentCount}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Registered academic profiles
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Grid: Calming Donut/Pie Chart + Recent Subjects */}
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
-        {/* Department Distribution Donut / Pie Chart */}
-        <Card className="lg:col-span-4 shadow-sm hover:shadow-md transition-all border border-border/80">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold text-foreground">Department Course Share</CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Proportional distribution of active courses per department
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center">
-            {pieData.length > 0 ? (
-              <>
-                <div className="w-full h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Tooltip content={<CustomPieTooltip />} />
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={55}
-                        outerRadius={95}
-                        paddingAngle={4}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {pieData.map((_, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={CALM_COLORS[index % CALM_COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Explicit HTML Legend with high contrast in both Light & Dark modes */}
-                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-2 px-2">
-                  {pieData.map((entry, index) => (
-                    <div
-                      key={`legend-${entry.name}`}
-                      className="flex items-center gap-1.5 text-xs text-foreground font-medium"
-                    >
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: CALM_COLORS[index % CALM_COLORS.length] }}
-                      />
-                      <span>{entry.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
-                Loading department distributions...
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Recent Subjects List */}
-        <Card className="lg:col-span-3 flex flex-col justify-between shadow-sm hover:shadow-md transition-all border border-border/80">
-          <div>
-            <CardHeader>
-              <CardTitle className="text-base font-semibold text-foreground">Recent Subjects</CardTitle>
-              <CardDescription className="text-muted-foreground">Latest courses registered on the platform</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {isLoadingSubjects ? (
-                <p className="text-sm text-muted-foreground">Loading courses...</p>
-              ) : (
-                subjects.slice(0, 5).map((subject: Subject) => (
-                  <div
-                    key={subject.id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-card hover:bg-accent/40 transition-colors shadow-2xs"
-                  >
-                    <div className="space-y-1 min-w-0 pr-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm truncate text-foreground">{subject.name}</span>
-                        <Badge variant="outline" className="font-mono text-xs border-primary/30 text-primary">
-                          {subject.code}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {subject.department?.name || "General"}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              )}
-            </CardContent>
-          </div>
-          <div className="p-4 pt-0">
-            <Link to="/subjects" className="w-full">
-              <Button variant="outline" className="w-full text-xs shadow-2xs">
-                View All {totalSubjects} Subjects
-              </Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
+  return <div className="flex flex-col gap-6 p-2 md:p-6">
+    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+      <div><h1 className="text-3xl font-bold tracking-tight">Classroom dashboard</h1><p className="mt-1 text-sm text-muted-foreground">Current totals, enrollment activity, and capacity overview.</p></div>
+      <Badge variant="outline">Administrator view</Badge>
     </div>
-  );
+
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {cards.map(({ label, value, icon: Icon }) => <Card key={label}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle><Icon className="h-4 w-4 text-primary" /></CardHeader><CardContent><p className="text-2xl font-bold">{value.toLocaleString()}</p></CardContent></Card>)}
+    </div>
+
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <Card><CardHeader><CardTitle>Enrollment trends</CardTitle><CardDescription>New enrollments by month, trailing six months</CardDescription></CardHeader><CardContent><div className="h-72"><ResponsiveContainer width="100%" height="100%"><LineChart data={data.enrollmentsByMonth}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="month" /><YAxis allowDecimals={false} /><Tooltip /><Line type="monotone" dataKey="count" name="Enrollments" stroke="#2dd4bf" strokeWidth={3} /></LineChart></ResponsiveContainer></div></CardContent></Card>
+
+      <Card><CardHeader><CardTitle>Classes by department</CardTitle><CardDescription>Number of classes associated with each department</CardDescription></CardHeader><CardContent><div className="h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={data.classesByDepartment} margin={{ bottom: 36 }}><CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="name" angle={-25} textAnchor="end" interval={0} height={70} /><YAxis allowDecimals={false} /><Tooltip /><Bar dataKey="value" name="Classes" fill="#38bdf8" radius={[5, 5, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent></Card>
+
+      <Card><CardHeader><CardTitle>Class capacity</CardTitle><CardDescription>Classes by remaining capacity status</CardDescription></CardHeader><CardContent><div className="h-72"><ResponsiveContainer width="100%" height="100%"><PieChart><Tooltip /><Pie data={capacityData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={98} paddingAngle={4}>{capacityData.map((entry, index) => <Cell key={entry.name} fill={COLORS[index]} />)}</Pie></PieChart></ResponsiveContainer></div><div className="flex flex-wrap justify-center gap-4 text-sm">{capacityData.map((entry, index) => <span key={entry.name} className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[index] }} />{entry.name}: {entry.value}</span>)}</div></CardContent></Card>
+
+      <Card><CardHeader><CardTitle>User distribution</CardTitle><CardDescription>Registered accounts by role</CardDescription></CardHeader><CardContent><div className="h-72"><ResponsiveContainer width="100%" height="100%"><PieChart><Tooltip /><Pie data={data.usersByRole} dataKey="value" nameKey="name" innerRadius={58} outerRadius={98} paddingAngle={4}>{data.usersByRole.map((entry, index) => <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />)}</Pie></PieChart></ResponsiveContainer></div><div className="flex flex-wrap justify-center gap-4 text-sm">{data.usersByRole.map((entry, index) => <span key={entry.name} className="flex items-center gap-2 capitalize"><i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />{entry.name}: {entry.value}</span>)}</div></CardContent></Card>
+    </div>
+
+    <Card><CardHeader><CardTitle>Recent activity</CardTitle><CardDescription>Latest registrations, classes, subjects, and enrollments</CardDescription></CardHeader><CardContent>{data.activity.length ? <ul className="divide-y">{data.activity.map((item) => <li key={item.id} className="flex flex-col justify-between gap-1 py-3 sm:flex-row sm:items-center"><span>{item.label}</span><span className="text-sm text-muted-foreground">{new Date(item.createdAt).toLocaleString()}</span></li>)}</ul> : <p className="text-sm text-muted-foreground">No recent activity.</p>}</CardContent></Card>
+
+    <div className="flex gap-3 text-sm"><Link className="text-primary underline-offset-4 hover:underline" to="/classes">Browse classes</Link><Link className="text-primary underline-offset-4 hover:underline" to="/users">Manage users</Link></div>
+  </div>;
 };
 
 export default Dashboard;

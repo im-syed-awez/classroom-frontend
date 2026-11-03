@@ -20,6 +20,7 @@ import { GraduationCap, Layers, Search } from "lucide-react";
 import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { EditButton } from "@/components/refine-ui/buttons/edit";
 import { DeleteButton } from "@/components/refine-ui/buttons/delete";
+import { useSearchParams } from "react-router";
 
 type Classroom = {
   id: number;
@@ -35,10 +36,26 @@ type Classroom = {
 const ClassesList = () => {
   const { data: identity } = useGetIdentity<{ role?: string }>();
   const canManageClasses = identity?.role === "admin" || identity?.role === "teacher";
-  const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedSubject, setSelectedSubject] = useState("all");
-  const [selectedTeacher, setSelectedTeacher] = useState("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") ?? "";
+  const selectedSubject = searchParams.get("subject") ?? "all";
+  const selectedTeacher = searchParams.get("teacher") ?? "all";
+  const selectedStatus = searchParams.get("status") ?? "all";
+  const selectedCapacity = searchParams.get("capacity") ?? "all";
+  const createdFrom = searchParams.get("from") ?? "";
+  const createdTo = searchParams.get("to") ?? "";
+
+  const updateParam = (key: string, value: string) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (!value || value === "all") next.delete(key);
+      else next.set(key, value);
+      next.delete("currentPage");
+      next.delete("page");
+      return next;
+    }, { replace: true });
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
@@ -53,6 +70,7 @@ const ClassesList = () => {
     resource: "users",
     filters: [{ field: "role", operator: "eq", value: "teacher" }],
     pagination: { pageSize: 100 },
+    queryOptions: { enabled: identity?.role === "admin" },
   });
 
   const filterConditions = [
@@ -65,6 +83,10 @@ const ClassesList = () => {
     ...(selectedTeacher !== "all"
       ? [{ field: "teacher", operator: "eq" as const, value: selectedTeacher }]
       : []),
+    ...(selectedStatus !== "all" ? [{ field: "status", operator: "eq" as const, value: selectedStatus }] : []),
+    ...(selectedCapacity !== "all" ? [{ field: "capacityStatus", operator: "eq" as const, value: selectedCapacity }] : []),
+    ...(createdFrom ? [{ field: "createdFrom", operator: "eq" as const, value: createdFrom }] : []),
+    ...(createdTo ? [{ field: "createdTo", operator: "eq" as const, value: createdTo }] : []),
   ];
 
   const classTable = useTable<Classroom>({
@@ -182,12 +204,12 @@ const ClassesList = () => {
               placeholder="Search class name..."
               className="pl-9 w-full"
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={(event) => updateParam("q", event.target.value)}
             />
           </div>
 
           <div className="w-full sm:w-52">
-            <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+            <Select value={selectedSubject} onValueChange={(value) => updateParam("subject", value)}>
               <SelectTrigger className="w-full">
                 <div className="flex items-center gap-2">
                   <Layers className="h-4 w-4 text-muted-foreground" />
@@ -206,7 +228,7 @@ const ClassesList = () => {
           </div>
 
           <div className="w-full sm:w-52">
-            <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
+            {identity?.role === "admin" && <Select value={selectedTeacher} onValueChange={(value) => updateParam("teacher", value)}>
               <SelectTrigger className="w-full">
                 <div className="flex items-center gap-2">
                   <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -221,8 +243,21 @@ const ClassesList = () => {
                   </SelectItem>
                 ))}
               </SelectContent>
-            </Select>
+            </Select>}
           </div>
+
+          <Select value={selectedStatus} onValueChange={(value) => updateParam("status", value)}>
+            <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Any status" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Any status</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="inactive">Inactive</SelectItem><SelectItem value="archived">Archived</SelectItem></SelectContent>
+          </Select>
+
+          <Select value={selectedCapacity} onValueChange={(value) => updateParam("capacity", value)}>
+            <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="Any capacity" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Any capacity</SelectItem><SelectItem value="available">Available</SelectItem><SelectItem value="nearlyFull">Nearly full</SelectItem><SelectItem value="full">Full</SelectItem></SelectContent>
+          </Select>
+
+          <Input aria-label="Created from" type="date" value={createdFrom} onChange={(event) => updateParam("from", event.target.value)} className="w-full sm:w-40" />
+          <Input aria-label="Created to" type="date" value={createdTo} onChange={(event) => updateParam("to", event.target.value)} className="w-full sm:w-40" />
 
           {canManageClasses && <CreateButton resource="classes" className="w-full sm:w-auto">Create Class</CreateButton>}
         </div>

@@ -20,13 +20,17 @@ import { CreateButton } from "@/components/refine-ui/buttons/create";
 import { EditButton } from "@/components/refine-ui/buttons/edit";
 import { ShowButton } from "@/components/refine-ui/buttons/show";
 import { DeleteButton } from "@/components/refine-ui/buttons/delete";
+import { useSearchParams } from "react-router";
 
 const SubjectsList = () => {
   const { data: identity } = useGetIdentity<{ role?: string }>();
   const isAdmin = identity?.role === "admin";
-  const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchQuery = searchParams.get("q") ?? "";
+  const selectedDepartment = searchParams.get("department") ?? "all";
+  const createdFrom = searchParams.get("from") ?? "";
+  const createdTo = searchParams.get("to") ?? "";
   const { query: departmentsQuery } = useList<Department>({ resource: "departments", pagination: { pageSize: 100 } });
 
   useEffect(() => {
@@ -36,6 +40,16 @@ const SubjectsList = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  const updateParam = (key: string, value: string) => {
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (!value || value === "all") next.delete(key);
+      else next.set(key, value);
+      next.delete("currentPage");
+      return next;
+    }, { replace: true });
+  };
+
   const departmentFilters =
     selectedDepartment === "all"
       ? []
@@ -44,6 +58,10 @@ const SubjectsList = () => {
   const searchFilters = debouncedSearch
     ? [{ field: "search", operator: "contains" as const, value: debouncedSearch }]
     : [];
+  const dateFilters = [
+    ...(createdFrom ? [{ field: "createdFrom", operator: "eq" as const, value: createdFrom }] : []),
+    ...(createdTo ? [{ field: "createdTo", operator: "eq" as const, value: createdTo }] : []),
+  ];
 
   const subjectTable = useTable<Subject>({
     columns: useMemo<ColumnDef<Subject>[]>(
@@ -110,7 +128,7 @@ const SubjectsList = () => {
       resource: "subjects",
       pagination: { pageSize: 10, mode: "server" },
       filters: {
-        permanent: [...departmentFilters, ...searchFilters],
+        permanent: [...departmentFilters, ...searchFilters, ...dateFilters],
       },
       sorters: {
         initial: [{ field: "id", order: "desc" }],
@@ -140,14 +158,14 @@ const SubjectsList = () => {
               placeholder="Search code or name..."
               className="pl-9 w-full"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => updateParam("q", e.target.value)}
             />
           </div>
 
           <div className="w-full sm:w-56">
             <Select
               value={selectedDepartment}
-              onValueChange={setSelectedDepartment}
+              onValueChange={(value) => updateParam("department", value)}
             >
               <SelectTrigger className="w-full">
                 <div className="flex items-center gap-2">
@@ -164,6 +182,8 @@ const SubjectsList = () => {
               </SelectContent>
             </Select>
           </div>
+          <Input aria-label="Created from" type="date" value={createdFrom} onChange={(event) => updateParam("from", event.target.value)} className="w-full sm:w-40" />
+          <Input aria-label="Created to" type="date" value={createdTo} onChange={(event) => updateParam("to", event.target.value)} className="w-full sm:w-40" />
           {isAdmin && <CreateButton resource="subjects" className="w-full sm:w-auto">Create Subject</CreateButton>}
         </div>
       </div>
