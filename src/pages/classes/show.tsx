@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ClassDetails } from "@/types";
 import { useGetIdentity, useShow } from "@refinedev/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -34,12 +34,16 @@ type Enrollment = {
 };
 
 type StudentOption = { id: string; name: string; image?: string | null };
+type StudentOptionsPage = {
+  data: StudentOption[];
+  pagination: { page: number; totalPages: number; total: number };
+};
 
-const apiRequest = async <T,>(
+const apiRequestPayload = async <T,>(
   url: string,
   method = "GET",
   body?: Record<string, unknown>,
-): Promise<T> => {
+): Promise<{ data: T; pagination?: StudentOptionsPage["pagination"] }> => {
   const response = await fetch(`${API_URL}${url}`, {
     method,
     credentials: "include",
@@ -49,8 +53,14 @@ const apiRequest = async <T,>(
   const payload = await response.json().catch(() => null);
   if (!response.ok)
     throw new Error(payload?.error ?? "Request failed. Please try again.");
-  return payload?.data as T;
+  return payload as { data: T; pagination?: StudentOptionsPage["pagination"] };
 };
+
+const apiRequest = async <T,>(
+  url: string,
+  method = "GET",
+  body?: Record<string, unknown>,
+): Promise<T> => (await apiRequestPayload<T>(url, method, body)).data;
 
 const Show = () => {
   const { query } = useShow<ClassDetails>({ resource: "classes" });
@@ -60,7 +70,12 @@ const Show = () => {
   const canManage = identity?.role === "admin" || identity?.role === "teacher";
   const [inviteCodeInput, setInviteCodeInput] = useState("");
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [studentPage, setStudentPage] = useState(1);
   const [enrollmentError, setEnrollmentError] = useState("");
+
+  useEffect(() => {
+    setSelectedStudentId("");
+  }, [routeId]);
 
   const classDetails = query.data?.data;
   const { isLoading, isError } = query;
@@ -79,9 +94,11 @@ const Show = () => {
     enabled: Boolean(routeId && canManage),
   });
   const studentsQuery = useQuery({
-    queryKey: ["enrollment-student-options", routeId],
+    queryKey: ["enrollment-student-options", routeId, studentPage],
     queryFn: () =>
-      apiRequest<StudentOption[]>(`/classes/${routeId}/enrollment-options`),
+      apiRequestPayload<StudentOption[]>(
+        `/classes/${routeId}/enrollment-options?page=${studentPage}`,
+      ),
     enabled: Boolean(routeId && canManage),
   });
 
@@ -364,7 +381,7 @@ const Show = () => {
                   <SelectValue placeholder="Select student to enroll" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(studentsQuery.data ?? [])
+                  {(studentsQuery.data?.data ?? [])
                     .filter(
                       (student) =>
                         !rosterQuery.data?.some(
@@ -392,6 +409,34 @@ const Show = () => {
                 {enrollMutation.isPending ? "Enrolling…" : "Enroll student"}
               </Button>
             </div>
+            {(studentsQuery.data?.pagination?.totalPages ?? 0) > 1 && (
+              <div className="flex items-center justify-end gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Page {studentPage} of {studentsQuery.data?.pagination?.totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={studentPage <= 1 || studentsQuery.isFetching}
+                  onClick={() => setStudentPage((page) => page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    studentPage >= (studentsQuery.data?.pagination?.totalPages ?? 1) ||
+                    studentsQuery.isFetching
+                  }
+                  onClick={() => setStudentPage((page) => page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
             {studentsQuery.isError && (
               <p role="alert" className="text-sm text-destructive">
                 Could not load student accounts.
