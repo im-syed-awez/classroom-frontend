@@ -62,7 +62,7 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
     name: "schedules",
   });
 
-  const onSubmit = async (values: z.infer<typeof classSchema>) => {
+  const onSubmit = async (values: z.input<typeof classSchema>) => {
     if (identity?.role === "admin" && !values.teacherId?.trim()) {
       setError("teacherId", { type: "manual", message: "Please select a teacher." });
       return;
@@ -70,7 +70,7 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
 
     try {
       await onFinish({
-        ...values,
+        ...classSchema.parse(values),
         teacherId: identity?.role === "teacher" ? identity.id : values.teacherId,
       });
     } catch (error) {
