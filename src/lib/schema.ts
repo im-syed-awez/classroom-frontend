@@ -68,6 +68,14 @@ export const classSchema = z.object({
   schedules: z.array(scheduleSchema).optional(),
 });
 
+export const classEditSchema = classSchema.extend({
+  status: z.enum(["active", "inactive", "archived"]).optional(),
+});
+
+export const classAdminEditSchema = classEditSchema.extend({
+  status: z.enum(["active", "inactive", "archived"]),
+});
+
 export const enrollmentSchema = z.object({
   classId: z.coerce
     .number({
