@@ -61,11 +61,19 @@ export const classSchema = z.object({
     })
     .int("Capacity must be a whole number")
     .min(1, "Capacity must be at least 1"),
-  status: z.enum(["active", "inactive", "archived"]),
+  status: z.enum(["active", "inactive", "archived"]).default("active"),
   bannerUrl: z.string().optional().or(z.literal("")),
   bannerCldPubId: z.string().optional().or(z.literal("")),
   inviteCode: z.string().optional(),
   schedules: z.array(scheduleSchema).optional(),
+});
+
+export const classEditSchema = classSchema.extend({
+  status: z.enum(["active", "inactive", "archived"]).optional(),
+});
+
+export const classAdminEditSchema = classEditSchema.extend({
+  status: z.enum(["active", "inactive", "archived"]),
 });
 
 export const enrollmentSchema = z.object({

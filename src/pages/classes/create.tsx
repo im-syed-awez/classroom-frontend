@@ -11,7 +11,11 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "@refinedev/react-hook-form";
 import { useFieldArray } from "react-hook-form";
-import { classSchema } from "@/lib/schema.ts";
+import {
+  classAdminEditSchema,
+  classEditSchema,
+  classSchema,
+} from "@/lib/schema.ts";
 import * as z from "zod";
 
 import {
@@ -39,9 +43,14 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
   const isEdit = action === "edit";
   const back = useBack();
   const { data: identity, isLoading: isLoadingIdentity } = useGetIdentity<{ id?: string; role?: string }>();
+  const validationSchema = isEdit
+    ? identity?.role === "admin"
+      ? classAdminEditSchema
+      : classEditSchema
+    : classSchema;
 
   const form = useForm({
-    resolver: zodResolver(classSchema),
+    resolver: zodResolver(validationSchema),
     refineCoreProps: {
       resource: "classes",
       action,
@@ -62,15 +71,26 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
     name: "schedules",
   });
 
-  const onSubmit = async (values: z.infer<typeof classSchema>) => {
+  const onSubmit = async (values: z.input<typeof classSchema>) => {
     if (identity?.role === "admin" && !values.teacherId?.trim()) {
       setError("teacherId", { type: "manual", message: "Please select a teacher." });
       return;
     }
 
     try {
+      const parsedValues = (isEdit
+        ? identity?.role === "admin"
+          ? classAdminEditSchema
+          : classEditSchema
+        : classSchema
+      ).parse(values);
+      const submissionValues =
+        isEdit && identity?.role !== "admin"
+          ? (({ status: _status, ...editValues }) => editValues)(parsedValues)
+          : parsedValues;
+
       await onFinish({
-        ...values,
+        ...submissionValues,
         teacherId: identity?.role === "teacher" ? identity.id : values.teacherId,
       });
     } catch (error) {
