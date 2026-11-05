@@ -91,7 +91,8 @@ export const ClassForm = ({ action }: { action: "create" | "edit" }) => {
     ],
     pagination: {
       pageSize: 100
-    }
+    },
+    queryOptions: { enabled: identity?.role === "admin" },
   })
 
   const subjects = subjectsQuery?.data?.data || [];

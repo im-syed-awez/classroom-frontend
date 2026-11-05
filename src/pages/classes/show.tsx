@@ -79,9 +79,10 @@ const Show = () => {
     enabled: Boolean(routeId && canManage),
   });
   const studentsQuery = useQuery({
-    queryKey: ["enrollment-student-options"],
-    queryFn: () => apiRequest<StudentOption[]>(`/users?role=student&limit=100`),
-    enabled: Boolean(canManage),
+    queryKey: ["enrollment-student-options", routeId],
+    queryFn: () =>
+      apiRequest<StudentOption[]>(`/classes/${routeId}/enrollment-options`),
+    enabled: Boolean(routeId && canManage),
   });
 
   const refreshEnrollmentData = async () => {
