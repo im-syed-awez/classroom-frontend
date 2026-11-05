@@ -14,6 +14,7 @@ import routerProvider, {
 } from "@refinedev/react-router";
 import { dataProvider } from "./providers/data";
 import { authProvider } from "./providers/auth";
+import { queryClient } from "./providers/query-client";
 import { Layout } from "./components/refine-ui/layout/layout";
 import { useNotificationProvider } from "./components/refine-ui/notification/use-notification-provider";
 import { Toaster } from "./components/refine-ui/notification/toaster";
@@ -65,6 +66,7 @@ function App() {
               options={{
                 syncWithLocation: true,
                 warnWhenUnsavedChanges: true,
+                reactQuery: { clientConfig: queryClient },
                 projectId: "TMGc6g-uZfuMi-ij8Y1L",
               }}
               resources={[

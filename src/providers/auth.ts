@@ -1,4 +1,5 @@
 import type { AuthProvider } from "@refinedev/core";
+import { queryClient } from "@/providers/query-client";
 import { API_URL } from "@/providers/constants";
 
 type AuthUser = {
@@ -65,6 +66,9 @@ export const authProvider: AuthProvider = {
   logout: async () => {
     try {
       await request("sign-out", {});
+      queryClient.removeQueries({
+        queryKey: ["enrollment-student-options"],
+      });
       return { success: true, redirectTo: "/login" };
     } catch (error) {
       return { success: false, error: error as Error };
